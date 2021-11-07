@@ -18,12 +18,41 @@ LRUReplacer::LRUReplacer(size_t num_pages) {}
 
 LRUReplacer::~LRUReplacer() = default;
 
-bool LRUReplacer::Victim(frame_id_t *frame_id) { return false; }
+bool LRUReplacer::Victim(frame_id_t *frame_id) {
+  std::lock_guard<std::mutex> lock_guard(latch_);
+  if (map_.empty()) {
+    return false;
+  }
+  frame_id_t to_delete = list_.back();
+  list_.pop_back();
+  map_.erase(map_.find(to_delete));
+  *frame_id = to_delete;
+  return true;
+}
 
-void LRUReplacer::Pin(frame_id_t frame_id) {}
+void LRUReplacer::Pin(frame_id_t frame_id) {
+  std::lock_guard<std::mutex> lock_guard(latch_);
+  auto find = map_.find(frame_id);
+  if (find == map_.end()) {
+    return;
+  }
+  list_.erase(find->second);
+  map_.erase(find);
+}
 
-void LRUReplacer::Unpin(frame_id_t frame_id) {}
+void LRUReplacer::Unpin(frame_id_t frame_id) {
+  std::lock_guard<std::mutex> lock_guard(latch_);
+  auto find = map_.find(frame_id);
+  if (find != map_.end()) {
+    return;
+  }
+  list_.emplace_front(frame_id);
+  map_[frame_id] = list_.begin();
+}
 
-size_t LRUReplacer::Size() { return 0; }
+size_t LRUReplacer::Size() {
+  std::lock_guard<std::mutex> lock_guard(latch_);
+  return list_.size();
+}
 
 }  // namespace bustub
