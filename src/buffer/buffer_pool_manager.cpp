@@ -75,6 +75,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
   pages_[loc].page_id_ = page_id;
   pages_[loc].is_dirty_ = false;
   pages_[loc].pin_count_ = 1;
+  replacer_->Pin(loc);
   return pages_ + loc;
 }
 
@@ -106,9 +107,7 @@ bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
     return false;
   }
   frame_id_t frame_id = find->second;
-  if (pages_[frame_id].is_dirty_) {
-    disk_manager_->WritePage(page_id, pages_[frame_id].data_);
-  }
+  disk_manager_->WritePage(page_id, pages_[frame_id].data_);
   return true;
 }
 
@@ -138,13 +137,15 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   if (pages_[loc].page_id_ != INVALID_PAGE_ID) {
     page_table_.erase(page_table_.find(pages_[loc].page_id_));
   }
+
   pages_[loc].ResetMemory();
   *page_id = disk_manager_->AllocatePage();
   pages_[loc].page_id_ = *page_id;
   pages_[loc].pin_count_ = 1;
   pages_[loc].is_dirty_ = false;
-  replacer_->Pin(*page_id);
+  replacer_->Pin(loc);
   page_table_[*page_id] = loc;
+  disk_manager_->WritePage(*page_id, pages_[loc].data_);
   return pages_ + loc;
   // return nullptr;
 }
@@ -169,8 +170,8 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
   pages_[frame_id].is_dirty_ = false;
   pages_[frame_id].page_id_ = INVALID_PAGE_ID;
   pages_[frame_id].ResetMemory();
-  replacer_->Unpin(page_id);
   free_list_.emplace_back(frame_id);
+  replacer_->Pin(frame_id);  // 放到free_list中只有要从replacer中去除
   disk_manager_->DeallocatePage(page_id);
 
   return true;
@@ -179,7 +180,7 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
 void BufferPoolManager::FlushAllPagesImpl() {
   std::lock_guard<std::mutex> lock_guard(latch_);
   for (size_t i = 0; i < pool_size_; ++i) {
-    if (pages_[i].is_dirty_) {
+    if (pages_[i].page_id_ != INVALID_PAGE_ID) {
       disk_manager_->WritePage(pages_[i].page_id_, pages_[i].data_);
     }
   }
