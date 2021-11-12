@@ -12,6 +12,7 @@
 #include <string>
 
 #include "common/exception.h"
+#include "common/logger.h"
 #include "common/rid.h"
 #include "storage/index/b_plus_tree.h"
 #include "storage/page/header_page.h"
@@ -24,8 +25,10 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, BufferPoolManager *buffer_pool_manag
       root_page_id_(INVALID_PAGE_ID),
       buffer_pool_manager_(buffer_pool_manager),
       comparator_(comparator),
-      leaf_max_size_(leaf_max_size == LEAF_PAGE_SIZE ? leaf_max_size - 1 : leaf_max_size),
-      internal_max_size_(internal_max_size == INTERNAL_PAGE_SIZE ? internal_max_size - 1 : internal_max_size) {}
+      leaf_max_size_(leaf_max_size - 1),
+      internal_max_size_(internal_max_size == INTERNAL_PAGE_SIZE ? internal_max_size - 1 : internal_max_size) {
+  LOG_DEBUG("Create BPlusTree: leaf_max_size: %d, internal_max_size: %d", leaf_max_size, internal_max_size);
+}
 
 /*
  * Helper function to decide whether current b+tree is empty
@@ -87,6 +90,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
+  LOG_DEBUG("Insert");
   if (IsEmpty()) {
     StartNewTree(key, value);
     return true;
@@ -153,10 +157,12 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
     return false;
   }
   // split.
-  if (find->GetSize() > find->GetMaxSize()) {
+  if (find->GetSize() >= find->GetMaxSize()) {
     auto new_node = Split(find);
     InsertIntoParent(static_cast<BPlusTreePage *>(find), new_node->KeyAt(0), static_cast<BPlusTreePage *>(new_node),
-                     nullptr);
+                     transaction);
+  } else {
+    buffer_pool_manager_->UnpinPage(cur_page_id, true);
   }
   return true;
 }
@@ -173,6 +179,7 @@ template <typename N>
 N *BPLUSTREE_TYPE::Split(N *node) {
   page_id_t new_page_id;
   Page *new_page = buffer_pool_manager_->NewPage(&new_page_id);
+  assert(new_page_id > 0);
   if (new_page == nullptr) {
     throw Exception(ExceptionType::OUT_OF_MEMORY, "Split: buffer pool manager out of memory!");
   }

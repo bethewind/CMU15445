@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <iostream>
 #include <random>
 #include <unordered_set>
 
@@ -142,7 +143,6 @@ TEST(BPlusTreeTests, InsertTest2) {
   remove("test.log");
 }
 
-
 TEST(BPlusTreeTests, RandomInsert) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
@@ -151,7 +151,7 @@ TEST(BPlusTreeTests, RandomInsert) {
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
   GenericKey<8> index_key;
   RID rid;
   // create transaction
@@ -164,7 +164,6 @@ TEST(BPlusTreeTests, RandomInsert) {
 
   std::unordered_set<int> se;
   std::vector<int64_t> keys{};
-
 
   int cnt = 0;
   while (cnt < 1000) {
