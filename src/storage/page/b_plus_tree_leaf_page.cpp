@@ -126,6 +126,8 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(BPlusTreeLeafPage *recipient) {
   }
   SetSize(cur_size / 2);
   recipient->SetSize(cur_size - cur_size / 2);
+  recipient->SetNextPageId(next_page_id_);
+  SetNextPageId(recipient->GetPageId());
 }
 
 /*

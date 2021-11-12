@@ -51,7 +51,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   if (cur_page == nullptr) {
     throw Exception(ExceptionType::OUT_OF_MEMORY, "GetValue: out of memory!");
   }
-  BPlusTreePage *cur_node = reinterpret_cast<BPlusTreePage*>(cur_page->GetData());
+  BPlusTreePage *cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
   while (!cur_node->IsLeafPage()) {
     // 一直向下找，直到找到叶子节点
     InternalPage *cur_internal_node = reinterpret_cast<InternalPage *>(cur_node);
@@ -62,7 +62,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
     if (cur_page == nullptr) {
       throw Exception(ExceptionType::OUT_OF_MEMORY, "GetValue: out of memory!");
     }
-    cur_node = reinterpret_cast<BPlusTreePage*>(cur_page->GetData());
+    cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
   }
   find = reinterpret_cast<LeafPage *>(cur_node);
   // 然后再叶子节点中进行查找
@@ -130,8 +130,9 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
   if (cur_page == nullptr) {
     throw Exception(ExceptionType::OUT_OF_MEMORY, "InsertIntoLeaf: out of memory!");
   }
-  BPlusTreePage *cur_node = reinterpret_cast<BPlusTreePage*>(cur_page->GetData());
-  // BPlusTreePage *cur_page = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(cur_page_id)->GetData());
+  BPlusTreePage *cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
+  // BPlusTreePage *cur_page = reinterpret_cast<BPlusTreePage
+  // *>(buffer_pool_manager_->FetchPage(cur_page_id)->GetData());
   while (!cur_node->IsLeafPage()) {
     InternalPage *cur_internal_node = reinterpret_cast<InternalPage *>(cur_node);
     page_id_t child_page_id = cur_internal_node->Lookup(key, comparator_);
@@ -141,7 +142,7 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value, 
     if (cur_page == nullptr) {
       throw Exception(ExceptionType::OUT_OF_MEMORY, "InsertIntoLeaf: out of memory!");
     }
-    cur_node = reinterpret_cast<BPlusTreePage*>(cur_page->GetData());
+    cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
   }
   find = reinterpret_cast<LeafPage *>(cur_page);
   int old_size = find->GetSize();
@@ -180,8 +181,6 @@ N *BPLUSTREE_TYPE::Split(N *node) {
     LeafPage *new_leaf_node = reinterpret_cast<LeafPage *>(new_page->GetData());
     new_leaf_node->Init(new_page_id, node->GetParentPageId(), leaf_max_size_);
     leaf_node->MoveHalfTo(new_leaf_node);
-    new_leaf_node->SetNextPageId(leaf_node->GetNextPageId());
-    leaf_node->SetNextPageId(new_page_id);
   } else {
     InternalPage *internal_node = reinterpret_cast<InternalPage *>(node);
     InternalPage *new_internal_node = reinterpret_cast<InternalPage *>(new_page->GetData());
@@ -234,8 +233,8 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &ke
     buffer_pool_manager_->UnpinPage(new_node->GetPageId(), true);
     if (parent_size > parent_node->GetMaxSize()) {
       auto new_node = Split(parent_node);
-      InsertIntoParent(static_cast<BPlusTreePage *>(parent_node), new_node->KeyAt(0), static_cast<BPlusTreePage *>(new_node),
-                       nullptr);
+      InsertIntoParent(static_cast<BPlusTreePage *>(parent_node), new_node->KeyAt(0),
+                       static_cast<BPlusTreePage *>(new_node), nullptr);
     } else {
       buffer_pool_manager_->UnpinPage(parent_node->GetPageId(), true);
     }
@@ -326,7 +325,8 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::begin() {
   Page *leaf_page = FindLeafPage(KeyType{}, true);
   INDEXITERATOR_TYPE ans(nullptr, 0, nullptr, true);
   if (leaf_page != nullptr) {
-    ans = INDEXITERATOR_TYPE(reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE*>(leaf_page->GetData()), 0, buffer_pool_manager_, false);
+    ans = INDEXITERATOR_TYPE(reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE *>(leaf_page->GetData()), 0,
+                             buffer_pool_manager_, false);
   }
   return ans;
 }
@@ -342,7 +342,7 @@ INDEXITERATOR_TYPE BPLUSTREE_TYPE::Begin(const KeyType &key) {
   INDEXITERATOR_TYPE ans(nullptr, 0, nullptr, true);
 
   if (leaf_page != nullptr) {
-    LeafPage *leaf_node = reinterpret_cast<LeafPage*>(leaf_page->GetData());
+    LeafPage *leaf_node = reinterpret_cast<LeafPage *>(leaf_page->GetData());
     int key_index = leaf_node->KeyIndex(key, comparator_);
     if (key_index == -1) {
       buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
