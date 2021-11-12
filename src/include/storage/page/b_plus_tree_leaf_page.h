@@ -51,6 +51,8 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   KeyType KeyAt(int index) const;
   int KeyIndex(const KeyType &key, const KeyComparator &comparator) const;
   const MappingType &GetItem(int index);
+  void SetKeyAt(int index, const KeyType &key);
+  void SetValutAt(int index, const ValueType &value);
 
   // insert and delete methods
   int Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator);
