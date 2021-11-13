@@ -25,7 +25,7 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, BufferPoolManager *buffer_pool_manag
       root_page_id_(INVALID_PAGE_ID),
       buffer_pool_manager_(buffer_pool_manager),
       comparator_(comparator),
-      leaf_max_size_(leaf_max_size - 1),
+      leaf_max_size_(leaf_max_size),
       internal_max_size_(internal_max_size == INTERNAL_PAGE_SIZE ? internal_max_size - 1 : internal_max_size) {
   LOG_DEBUG("Create BPlusTree: leaf_max_size: %d, internal_max_size: %d", leaf_max_size, internal_max_size);
 }
@@ -90,7 +90,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
-  LOG_DEBUG("Insert");
+  // LOG_DEBUG("Insert");
   if (IsEmpty()) {
     StartNewTree(key, value);
     return true;

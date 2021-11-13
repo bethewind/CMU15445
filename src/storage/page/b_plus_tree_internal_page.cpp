@@ -48,7 +48,6 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) { a
  */
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
-  // sequence search, can be optimized by binary search.
   for (int i = 0; i < BPlusTreePage::GetMaxSize(); ++i) {
     if (array[i].second == value) {
       return i;
@@ -83,12 +82,18 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const { return arra
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key, const KeyComparator &comparator) const {
   // 找到第一个大于key的位置，然后返回前一个的pageid
-  for (int i = 1; i < BPlusTreePage::GetSize(); ++i) {
-    if (comparator(key, array[i].first) < 0) {
-      return array[i - 1].second;
+  int cur_size = GetSize();
+  int l = 1;
+  int r = cur_size;
+  while (l < r) {
+    int mid = (l + r) / 2;
+    if (comparator(key, array[mid].first) >= 0) {
+      l = mid + 1;
+    } else {
+      r = mid;
     }
   }
-  return array[BPlusTreePage::GetSize() - 1].second;
+  return array[l - 1].second;
 }
 
 /*****************************************************************************
@@ -116,7 +121,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(const ValueType &old_value,
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(const ValueType &old_value, const KeyType &new_key,
                                                     const ValueType &new_value) {
-  int cur_size = BPlusTreePage::GetSize();
+  int cur_size = GetSize();
   int index = cur_size - 1;
   while (index >= 0 && array[index].second != old_value) {
     array[index + 1] = array[index];

@@ -61,12 +61,18 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(const KeyType &key, const KeyComparator &comparator) const {
-  for (int i = 0; i < BPlusTreePage::GetMaxSize(); ++i) {
-    if (comparator(key, array[i].first) <= 0) {
-      return i;
+  int cur_size = GetSize();
+  int l = 0;
+  int r = cur_size;
+  while (l < r) {
+    int mid = (l + r) / 2;
+    if (comparator(key, array[mid].first) > 0) {
+      l = mid + 1;
+    } else {
+      r = mid;
     }
   }
-  return -1;
+  return l;
 }
 
 /*
@@ -156,14 +162,23 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyNFrom(MappingType *items, int size) {}
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const {
-  int cur_size = BPlusTreePage::GetSize();
-  for (int i = 0; i < cur_size; ++i) {
-    if (comparator(key, array[i].first) == 0) {
-      *value = array[i].second;
-      return true;
+  int cur_size = GetSize();
+  int l = 0;
+  int r = cur_size - 1;
+  while (l < r) {
+    int mid = (l + r + 1) / 2;
+    if (comparator(key, array[mid].first) < 0) {
+      r = mid - 1;
+    } else {
+      l = mid;
     }
   }
-  return false;
+  bool ans = false;
+  if (comparator(key, array[l].first) == 0) {
+    ans = true;
+    *value = array[l].second;
+  }
+  return ans;
 }
 
 /*****************************************************************************
