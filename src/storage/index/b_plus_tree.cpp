@@ -47,33 +47,18 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   if (IsEmpty()) {
     return false;
   }
-  page_id_t cur_page_id = root_page_id_;
-  LeafPage *find = nullptr;
-  Page *cur_page = buffer_pool_manager_->FetchPage(cur_page_id);
-  if (cur_page == nullptr) {
-    throw Exception(ExceptionType::OUT_OF_MEMORY, "GetValue: out of memory!");
+
+  Page *leaf_page = FindLeafPage(key, false);
+  if (leaf_page == nullptr) {
+    return false;
   }
-  BPlusTreePage *cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
-  while (!cur_node->IsLeafPage()) {
-    // 一直向下找，直到找到叶子节点
-    InternalPage *cur_internal_node = reinterpret_cast<InternalPage *>(cur_node);
-    page_id_t child_page_id = cur_internal_node->Lookup(key, comparator_);
-    buffer_pool_manager_->UnpinPage(cur_page_id, false);
-    cur_page_id = child_page_id;
-    cur_page = buffer_pool_manager_->FetchPage(cur_page_id);
-    if (cur_page == nullptr) {
-      throw Exception(ExceptionType::OUT_OF_MEMORY, "GetValue: out of memory!");
-    }
-    cur_node = reinterpret_cast<BPlusTreePage *>(cur_page->GetData());
-  }
-  find = reinterpret_cast<LeafPage *>(cur_node);
-  // 然后再叶子节点中进行查找
+  LeafPage *leaf_node = reinterpret_cast<LeafPage*>(leaf_page->GetData());
   ValueType signal_result;
-  bool ans = find->Lookup(key, &signal_result, comparator_);
+  bool ans = leaf_node->Lookup(key, &signal_result, comparator_);
   if (ans) {
     result->emplace_back(signal_result);
   }
-  buffer_pool_manager_->UnpinPage(cur_page_id, false);
+  buffer_pool_manager_->UnpinPage(leaf_node->GetPageId(), false);
   return ans;
 }
 
