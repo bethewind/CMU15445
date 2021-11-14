@@ -17,6 +17,7 @@
 #include <unordered_map>
 
 #include "buffer/lru_replacer.h"
+#include "common/logger.h"
 #include "recovery/log_manager.h"
 #include "storage/disk/disk_manager.h"
 #include "storage/page/page.h"
@@ -47,6 +48,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   Page *FetchPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
+    LOG_DEBUG("Fetch Page: %d", page_id);
     auto *result = FetchPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
@@ -55,6 +57,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   bool UnpinPage(page_id_t page_id, bool is_dirty, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
+    LOG_DEBUG("Unpin Page: %d", page_id);
     auto result = UnpinPageImpl(page_id, is_dirty);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
@@ -79,6 +82,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   bool DeletePage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
+    LOG_DEBUG("Delete Page: %d", page_id);
     auto result = DeletePageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
