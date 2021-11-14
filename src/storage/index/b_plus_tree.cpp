@@ -26,9 +26,7 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, BufferPoolManager *buffer_pool_manag
       buffer_pool_manager_(buffer_pool_manager),
       comparator_(comparator),
       leaf_max_size_(leaf_max_size),
-      internal_max_size_(internal_max_size == INTERNAL_PAGE_SIZE ? internal_max_size - 1 : internal_max_size) {
-  LOG_DEBUG("Create BPlusTree: leaf_max_size: %d, internal_max_size: %d", leaf_max_size, internal_max_size);
-}
+      internal_max_size_(internal_max_size == INTERNAL_PAGE_SIZE ? internal_max_size - 1 : internal_max_size) {}
 
 /*
  * Helper function to decide whether current b+tree is empty
@@ -45,6 +43,7 @@ bool BPLUSTREE_TYPE::IsEmpty() const { return root_page_id_ == INVALID_PAGE_ID; 
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *transaction) {
+  std::lock_guard<std::mutex> lk(latch_);
   if (IsEmpty()) {
     return false;
   }
@@ -90,12 +89,14 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
  */
 INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transaction *transaction) {
-  // LOG_DEBUG("Insert");
+  std::lock_guard<std::mutex> lk(latch_);
+  bool ans = true;
   if (IsEmpty()) {
     StartNewTree(key, value);
-    return true;
+    // return true;
   }
-  return InsertIntoLeaf(key, value, transaction);
+  ans = InsertIntoLeaf(key, value, transaction);
+  return ans;
 }
 /*
  * Insert constant key & value pair into an empty tree
@@ -260,6 +261,7 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node, const KeyType &ke
  */
 INDEX_TEMPLATE_ARGUMENTS
 void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
+  std::lock_guard<std::mutex> lk(latch_);
   if (IsEmpty()) {
     return;
   }
@@ -280,6 +282,8 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   if (new_size < leaf_node->GetMinSize()) {
     // transfer the leaf_node to CoalesceOrRedistribute() function.
     CoalesceOrRedistribute(leaf_node, transaction);
+  } else {
+    buffer_pool_manager_->UnpinPage(leaf_node->GetPageId(), true);
   }
 }
 

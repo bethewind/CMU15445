@@ -48,7 +48,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   Page *FetchPage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
-    LOG_DEBUG("Fetch Page: %d", page_id);
+    // LOG_DEBUG("Fetch Page: %d", page_id);
     auto *result = FetchPageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
@@ -57,7 +57,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   bool UnpinPage(page_id_t page_id, bool is_dirty, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
-    LOG_DEBUG("Unpin Page: %d", page_id);
+    // LOG_DEBUG("Unpin Page: %d", page_id);
     auto result = UnpinPageImpl(page_id, is_dirty);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
@@ -75,6 +75,7 @@ class BufferPoolManager {
   Page *NewPage(page_id_t *page_id, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, INVALID_PAGE_ID);
     auto *result = NewPageImpl(page_id);
+    // LOG_DEBUG("Fetch Page: %d", *page_id);
     GradingCallback(callback, CallbackType::AFTER, *page_id);
     return result;
   }
@@ -82,7 +83,7 @@ class BufferPoolManager {
   /** Grading function. Do not modify! */
   bool DeletePage(page_id_t page_id, bufferpool_callback_fn callback = nullptr) {
     GradingCallback(callback, CallbackType::BEFORE, page_id);
-    LOG_DEBUG("Delete Page: %d", page_id);
+    // LOG_DEBUG("Delete Page: %d", page_id);
     auto result = DeletePageImpl(page_id);
     GradingCallback(callback, CallbackType::AFTER, page_id);
     return result;
@@ -100,6 +101,8 @@ class BufferPoolManager {
 
   /** @return size of the buffer pool */
   size_t GetPoolSize() { return pool_size_; }
+
+  size_t GetFreeSize() const { return replacer_->Size() + free_list_.size(); }
 
  protected:
   /**

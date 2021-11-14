@@ -548,8 +548,6 @@ TEST(BPlusTreeTests, RandomDelete) {
     EXPECT_EQ(rids[0].GetSlotNum(), value);
   }
 
-  LOG_DEBUG("REMOVE START!");
-
   // remove the first half element.
   for (int i = 0; i < NUM_KEYS / 2; ++i) {
     index_key.SetFromInteger(keys[i]);

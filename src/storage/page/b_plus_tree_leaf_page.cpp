@@ -111,6 +111,13 @@ INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) {
   int cur_size = GetSize();
   int cur_index = cur_size - 1;
+
+  ValueType dummy;
+  if (Lookup(key, &dummy, comparator)) {
+    // if key is in node.
+    return GetSize();
+  }
+
   while (cur_index >= 0) {
     int compare_result = comparator(key, array[cur_index].first);
     if (compare_result < 0) {
