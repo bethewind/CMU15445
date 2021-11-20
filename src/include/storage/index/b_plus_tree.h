@@ -37,6 +37,7 @@ INDEX_TEMPLATE_ARGUMENTS
 class BPlusTree {
   using InternalPage = BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>;
   using LeafPage = BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>;
+  enum class OPType { FIND, INSERT, DELETE };
 
  public:
   explicit BPlusTree(std::string name, BufferPoolManager *buffer_pool_manager, const KeyComparator &comparator,
@@ -77,9 +78,14 @@ class BPlusTree {
   // read data from file and remove one by one
   void RemoveFromFile(const std::string &file_name, Transaction *transaction = nullptr);
   // expose for test purpose
-  Page *FindLeafPage(const KeyType &key, bool leftMost = false);
+  Page *FindLeafPage(const KeyType &key, bool leftMost = false, OPType optype = OPType::FIND,
+                     Transaction *transaction = nullptr);
 
  private:
+  void ClearTransactionLockedPages(Transaction *transaction = nullptr, OPType op_type = OPType::FIND);
+
+  void DeleteTransactionPages(Transaction *transaction = nullptr);
+
   void StartNewTree(const KeyType &key, const ValueType &value);
 
   bool InsertIntoLeaf(const KeyType &key, const ValueType &value, Transaction *transaction = nullptr);
@@ -116,7 +122,7 @@ class BPlusTree {
   KeyComparator comparator_;
   int leaf_max_size_;
   int internal_max_size_;
-  std::mutex latch_;
+  Page dummy_;  // 用于对root_page_id_进行保护
 };
 
 }  // namespace bustub
