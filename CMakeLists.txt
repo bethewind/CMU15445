@@ -11,6 +11,7 @@ project(BusTub
         )
 
 
+# generate compiler.json file for ycm to jump
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # People keep running CMake in the wrong folder, completely nuking their project or creating weird bugs.
 # This checks if you're running CMake from a folder that already has CMakeLists.txt.
