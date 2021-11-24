@@ -96,6 +96,10 @@ Value Tuple::GetValue(const Schema *schema, const uint32_t column_idx) const {
   return Value::DeserializeFrom(data_ptr, column_type);
 }
 
+/**
+ * Get the schema and key_attrs, get the values and 
+ * reformat to the key_schema storage.
+ */
 Tuple Tuple::KeyFromTuple(const Schema &schema, const Schema &key_schema, const std::vector<uint32_t> &key_attrs) {
   std::vector<Value> values;
   values.reserve(key_attrs.size());
@@ -105,6 +109,9 @@ Tuple Tuple::KeyFromTuple(const Schema &schema, const Schema &key_schema, const 
   return Tuple(values, &key_schema);
 }
 
+/**
+ * get the data location 
+ */
 const char *Tuple::GetDataPtr(const Schema *schema, const uint32_t column_idx) const {
   assert(schema);
   assert(data_);
