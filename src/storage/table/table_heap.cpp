@@ -37,6 +37,9 @@ TableHeap::TableHeap(BufferPoolManager *buffer_pool_manager, LockManager *lock_m
 }
 
 bool TableHeap::InsertTuple(const Tuple &tuple, RID *rid, Transaction *txn) {
+  // Because the Header of table page is 24
+  // The offset and size if 8
+  // so 32 = 24 + 8
   if (tuple.size_ + 32 > PAGE_SIZE) {  // larger than one page size
     txn->SetState(TransactionState::ABORTED);
     return false;

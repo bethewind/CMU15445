@@ -179,6 +179,9 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyNFrom(MappingType *items, int size) {
 INDEX_TEMPLATE_ARGUMENTS
 bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const {
   int cur_size = GetSize();
+  if (cur_size == 0) {
+      return false;
+  }
   int l = 0;
   int r = cur_size - 1;
   while (l < r) {

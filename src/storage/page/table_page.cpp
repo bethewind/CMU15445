@@ -66,6 +66,7 @@ bool TablePage::InsertTuple(const Tuple &tuple, RID *rid, Transaction *txn, Lock
   SetTupleOffsetAtSlot(i, GetFreeSpacePointer());
   SetTupleSize(i, tuple.size_);
 
+  // Get the {Pageid, soltid} to index the storage.
   rid->Set(GetTablePageId(), i);
   if (i == GetTupleCount()) {
     SetTupleCount(GetTupleCount() + 1);
@@ -127,6 +128,8 @@ bool TablePage::MarkDelete(const RID &rid, Transaction *txn, LockManager *lock_m
   return true;
 }
 
+// move the other data as a whole 
+// and update the metadata of them.
 bool TablePage::UpdateTuple(const Tuple &new_tuple, Tuple *old_tuple, const RID &rid, Transaction *txn,
                             LockManager *lock_manager, LogManager *log_manager) {
   BUSTUB_ASSERT(new_tuple.size_ > 0, "Cannot have empty tuples.");

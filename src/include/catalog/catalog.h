@@ -130,8 +130,17 @@ class Catalog {
     // acquire the index_oid
     index_oid_t index_oid = next_index_oid_++;
     // create the index 
-    IndexMetadata index_metadata = new IndexMetadata(index_name, table_name, &schema, key_attrs);
-    std::unique_ptr<Index> index = std::make_unique<Index>(index_metadata);
+    IndexMetadata *index_metadata = new IndexMetadata(index_name, table_name, &schema, key_attrs);
+    std::unique_ptr<Index> index = std::make_unique<BPlusTreeIndex<KeyType, ValueType, KeyComparator>>(index_metadata, bpm_);
+    // polulate existing data of the table.
+    TableHeap* table_heap = GetTable(table_name)->table_.get();
+    std::uint32_t counter = 0;
+    for (auto iter = table_heap->Begin(txn); iter != table_heap->End(); ++iter) {
+        Tuple tuple  = iter->KeyFromTuple(schema, key_schema, key_attrs);
+        index->InsertEntry(tuple, iter->GetRid(), txn);
+        ++counter;
+    }     
+    LOG_INFO("Insert %d element to index %s of table %s", counter, index_name.c_str(), table_name.c_str());
     std::unique_ptr<IndexInfo> index_info = std::make_unique<IndexInfo>(key_schema, index_name, std::move(index), index_oid, table_name, keysize);
     IndexInfo *ans = index_info.get();
     // maintain the data structure

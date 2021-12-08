@@ -27,6 +27,10 @@ Tuple::Tuple(std::vector<Value> values, const Schema *schema) : allocated_(true)
   // 1. Calculate the size of the tuple.
   uint32_t tuple_size = schema->GetLength();
   for (auto &i : schema->GetUnlinedColumns()) {
+    // for variable length colume, store the offset of real data.
+    // the for the realdata, first store the length of readdata, 
+    // and then store the data.
+    // so the space occupy is realsize + sizeof(uint32_t) + fix_length_of_varchar(12).
     tuple_size += (values[i].GetLength() + sizeof(uint32_t));
   }
 
