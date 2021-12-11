@@ -49,7 +49,7 @@ TEST(CatalogTest, CreateTableTest) {
 
   // Notice that this test case doesn't check anything! :(
   // It is up to you to extend it
-   
+
   EXPECT_EQ(table_metadata->name_, table_name);
   EXPECT_EQ(table_metadata->oid_, 0);
   delete catalog;
@@ -71,13 +71,14 @@ TEST(CatalogTest, CreateIndexTest) {
   std::vector<std::string> table_names = {"empty_table", "test_1", "test_2", "test_3", "empty_table2", "empty_table3"};
 
   for (const auto &table_name : table_names) {
-      ASSERT_TRUE(catalog->GetTable(table_name) != nullptr);
+    ASSERT_TRUE(catalog->GetTable(table_name) != nullptr);
   }
 
   TableMetadata *table_metadata_for_test1 = catalog->GetTable("test_3");
   std::vector<uint32_t> key_attrs = {0};
   Schema *index_scheme = Schema::CopySchema(&(table_metadata_for_test1->schema_), key_attrs);
-  IndexInfo *index_info = catalog->CreateIndex<GenericKey<4>, RID, GenericComparator<4>>(txn, "index_1", "test_3", table_metadata_for_test1->schema_, *index_scheme, key_attrs, 4);
+  IndexInfo *index_info = catalog->CreateIndex<GenericKey<4>, RID, GenericComparator<4>>(
+      txn, "index_1", "test_3", table_metadata_for_test1->schema_, *index_scheme, key_attrs, 4);
   EXPECT_TRUE(index_info != nullptr);
   EXPECT_EQ(index_info->index_oid_, 0);
   auto index = static_cast<BPlusTreeIndex<GenericKey<4>, RID, GenericComparator<4>> *>(index_info->index_.get());
@@ -85,14 +86,13 @@ TEST(CatalogTest, CreateIndexTest) {
 
   uint32_t counter = 0;
   while (index_iter != index->GetEndIterator()) {
-     
-      auto key = (*index_iter).first;
+    auto key = (*index_iter).first;
 
-      uint32_t key_int = key.ToValue(index_scheme, 0).GetAs<uint32_t>();
-      EXPECT_EQ(key_int, counter);
-      counter += 1;
-      ++index_iter;
-  } 
+    uint32_t key_int = key.ToValue(index_scheme, 0).GetAs<uint32_t>();
+    EXPECT_EQ(key_int, counter);
+    counter += 1;
+    ++index_iter;
+  }
 
   delete index_scheme;
   delete exec_ctx;

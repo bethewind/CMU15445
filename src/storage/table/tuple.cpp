@@ -28,7 +28,7 @@ Tuple::Tuple(std::vector<Value> values, const Schema *schema) : allocated_(true)
   uint32_t tuple_size = schema->GetLength();
   for (auto &i : schema->GetUnlinedColumns()) {
     // for variable length colume, store the offset of real data.
-    // the for the realdata, first store the length of readdata, 
+    // the for the realdata, first store the length of readdata,
     // and then store the data.
     // so the space occupy is realsize + sizeof(uint32_t) + fix_length_of_varchar(12).
     tuple_size += (values[i].GetLength() + sizeof(uint32_t));
@@ -101,7 +101,7 @@ Value Tuple::GetValue(const Schema *schema, const uint32_t column_idx) const {
 }
 
 /**
- * Get the schema and key_attrs, get the values and 
+ * Get the schema and key_attrs, get the values and
  * reformat to the key_schema storage.
  */
 Tuple Tuple::KeyFromTuple(const Schema &schema, const Schema &key_schema, const std::vector<uint32_t> &key_attrs) {
@@ -114,7 +114,7 @@ Tuple Tuple::KeyFromTuple(const Schema &schema, const Schema &key_schema, const 
 }
 
 /**
- * get the data location 
+ * get the data location
  */
 const char *Tuple::GetDataPtr(const Schema *schema, const uint32_t column_idx) const {
   assert(schema);

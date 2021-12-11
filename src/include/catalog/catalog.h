@@ -86,8 +86,9 @@ class Catalog {
     // create table heap
     std::unique_ptr<TableHeap> table_heap = std::make_unique<TableHeap>(bpm_, lock_manager_, log_manager_, txn);
     // create table metadata
-    std::unique_ptr<TableMetadata> table_metadata = std::make_unique<TableMetadata>(schema, table_name, std::move(table_heap), table_oid);
-    TableMetadata* ans = table_metadata.get();
+    std::unique_ptr<TableMetadata> table_metadata =
+        std::make_unique<TableMetadata>(schema, table_name, std::move(table_heap), table_oid);
+    TableMetadata *ans = table_metadata.get();
     // maintain the data structure.
     names_[table_name] = table_oid;
     tables_[table_oid] = std::move(table_metadata);
@@ -95,21 +96,21 @@ class Catalog {
   }
 
   /** @return table metadata by name */
-  TableMetadata *GetTable(const std::string &table_name) { 
-     auto names_iter = names_.find(table_name);
-     if (names_iter == names_.end()) {
-         throw std::out_of_range("Cannot find table");
-     }
-     table_oid_t table_oid = names_iter->second;
-     return GetTable(table_oid);
+  TableMetadata *GetTable(const std::string &table_name) {
+    auto names_iter = names_.find(table_name);
+    if (names_iter == names_.end()) {
+      throw std::out_of_range("Cannot find table");
+    }
+    table_oid_t table_oid = names_iter->second;
+    return GetTable(table_oid);
   }
 
   /** @return table metadata by oid */
   TableMetadata *GetTable(table_oid_t table_oid) {
-     auto tables_iter = tables_.find(table_oid);
-     if (tables_iter == tables_.end()) {
-         throw std::out_of_range("Cannot find table");
-     }
+    auto tables_iter = tables_.find(table_oid);
+    if (tables_iter == tables_.end()) {
+      throw std::out_of_range("Cannot find table");
+    }
     return tables_iter->second.get();
   }
   /**
@@ -129,19 +130,21 @@ class Catalog {
                          size_t keysize) {
     // acquire the index_oid
     index_oid_t index_oid = next_index_oid_++;
-    // create the index 
+    // create the index
     IndexMetadata *index_metadata = new IndexMetadata(index_name, table_name, &schema, key_attrs);
-    std::unique_ptr<Index> index = std::make_unique<BPlusTreeIndex<KeyType, ValueType, KeyComparator>>(index_metadata, bpm_);
+    std::unique_ptr<Index> index =
+        std::make_unique<BPlusTreeIndex<KeyType, ValueType, KeyComparator>>(index_metadata, bpm_);
     // polulate existing data of the table.
-    TableHeap* table_heap = GetTable(table_name)->table_.get();
+    TableHeap *table_heap = GetTable(table_name)->table_.get();
     std::uint32_t counter = 0;
     for (auto iter = table_heap->Begin(txn); iter != table_heap->End(); ++iter) {
-        Tuple tuple  = iter->KeyFromTuple(schema, key_schema, key_attrs);
-        index->InsertEntry(tuple, iter->GetRid(), txn);
-        ++counter;
-    }     
+      Tuple tuple = iter->KeyFromTuple(schema, key_schema, key_attrs);
+      index->InsertEntry(tuple, iter->GetRid(), txn);
+      ++counter;
+    }
     LOG_INFO("Insert %d element to index %s of table %s", counter, index_name.c_str(), table_name.c_str());
-    std::unique_ptr<IndexInfo> index_info = std::make_unique<IndexInfo>(key_schema, index_name, std::move(index), index_oid, table_name, keysize);
+    std::unique_ptr<IndexInfo> index_info =
+        std::make_unique<IndexInfo>(key_schema, index_name, std::move(index), index_oid, table_name, keysize);
     IndexInfo *ans = index_info.get();
     // maintain the data structure
     indexes_[index_oid] = std::move(index_info);
@@ -149,42 +152,42 @@ class Catalog {
     return ans;
   }
 
-
   IndexInfo *GetIndex(const std::string &index_name, const std::string &table_name) {
-      auto index_names_iter = index_names_.find(table_name);
-      if (index_names_iter == index_names_.end()) {
-         throw std::out_of_range("Cannot find index");
-      }
-      auto table_indexs = index_names_iter->second;
-      auto table_indexs_iter = table_indexs.find(index_name);
-      if (table_indexs_iter == table_indexs.end()) {
-         throw std::out_of_range("Cannot find index");
-      }
-      return GetIndex(table_indexs_iter->second);
+    auto index_names_iter = index_names_.find(table_name);
+    if (index_names_iter == index_names_.end()) {
+      throw std::out_of_range("Cannot find index");
     }
+    auto table_indexs = index_names_iter->second;
+    auto table_indexs_iter = table_indexs.find(index_name);
+    if (table_indexs_iter == table_indexs.end()) {
+      throw std::out_of_range("Cannot find index");
+    }
+    return GetIndex(table_indexs_iter->second);
+  }
 
-  IndexInfo *GetIndex(index_oid_t index_oid) { 
-      auto indexes_iter = indexes_.find(index_oid);
-      if (indexes_iter == indexes_.end()) {
-         throw std::out_of_range("Cannot find index");
-      }
-      return indexes_iter->second.get();
+  IndexInfo *GetIndex(index_oid_t index_oid) {
+    auto indexes_iter = indexes_.find(index_oid);
+    if (indexes_iter == indexes_.end()) {
+      throw std::out_of_range("Cannot find index");
+    }
+    return indexes_iter->second.get();
   }
 
   std::vector<IndexInfo *> GetTableIndexes(const std::string &table_name) {
-         std::vector<IndexInfo *> ans;
-         auto index_names_inter = index_names_.find(table_name);
-         if (index_names_inter == index_names_.end()) {
-            return ans;
-         } 
-         for (auto && ele : index_names_inter->second) {
-            IndexInfo *get_result = GetIndex(ele.second);
-             if (get_result != nullptr) {
-                 ans.push_back(get_result);
-            }
-         }
-         return ans;
+    std::vector<IndexInfo *> ans;
+    auto index_names_inter = index_names_.find(table_name);
+    if (index_names_inter == index_names_.end()) {
+      return ans;
+    }
+    for (auto &&ele : index_names_inter->second) {
+      IndexInfo *get_result = GetIndex(ele.second);
+      if (get_result != nullptr) {
+        ans.push_back(get_result);
+      }
+    }
+    return ans;
   }
+
  private:
   [[maybe_unused]] BufferPoolManager *bpm_;
   [[maybe_unused]] LockManager *lock_manager_;

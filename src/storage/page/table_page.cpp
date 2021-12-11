@@ -128,7 +128,7 @@ bool TablePage::MarkDelete(const RID &rid, Transaction *txn, LockManager *lock_m
   return true;
 }
 
-// move the other data as a whole 
+// move the other data as a whole
 // and update the metadata of them.
 bool TablePage::UpdateTuple(const Tuple &new_tuple, Tuple *old_tuple, const RID &rid, Transaction *txn,
                             LockManager *lock_manager, LogManager *log_manager) {
