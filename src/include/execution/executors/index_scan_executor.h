@@ -14,10 +14,14 @@
 
 #include <vector>
 
+#include "catalog/catalog.h"
 #include "common/rid.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/index_scan_plan.h"
+#include "storage/index/generic_key.h"
+#include "storage/index/index_iterator.h"
+#include "storage/table/table_heap.h"
 #include "storage/table/tuple.h"
 
 namespace bustub {
@@ -42,7 +46,13 @@ class IndexScanExecutor : public AbstractExecutor {
   bool Next(Tuple *tuple, RID *rid) override;
 
  private:
+  using ITER_TYPE = IndexIterator<GenericKey<8>, RID, GenericComparator<8>>;
   /** The index scan plan node to be executed. */
   const IndexScanPlanNode *plan_;
+
+  Index *index_;
+  ITER_TYPE cur_;
+
+  TableMetadata *table_metadata_;
 };
 }  // namespace bustub
