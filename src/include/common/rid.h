@@ -67,6 +67,7 @@ class RID {
 
 }  // namespace bustub
 
+// 对std中的hash模板进行了特化，支持自定义的RID
 namespace std {
 template <>
 struct hash<bustub::RID> {

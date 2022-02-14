@@ -41,6 +41,7 @@ Tuple::Tuple(std::vector<Value> values, const Schema *schema) : allocated_(true)
 
   // 3. Serialize each attribute based on the input value.
   uint32_t column_count = schema->GetColumnCount();
+  // 从schema的固定长度后面开始添加边长的字符串列的内容
   uint32_t offset = schema->GetLength();
 
   for (uint32_t i = 0; i < column_count; i++) {
@@ -52,7 +53,7 @@ Tuple::Tuple(std::vector<Value> values, const Schema *schema) : allocated_(true)
       values[i].SerializeTo(data_ + offset);
       offset += (values[i].GetLength() + sizeof(uint32_t));
     } else {
-      values[i].SerializeTo(data_ + col.GetOffset());
+      values[i].SerializeTo(data_ + col.GetOffset());  // 对于inline的数据，直接在对应的位置序列化即可
     }
   }
 }
@@ -91,6 +92,7 @@ Tuple &Tuple::operator=(const Tuple &other) {
   return *this;
 }
 
+// 通过传入的schema和column_idx来获得存储的内容
 Value Tuple::GetValue(const Schema *schema, const uint32_t column_idx) const {
   assert(schema);
   assert(data_);

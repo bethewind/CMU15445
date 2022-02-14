@@ -27,6 +27,8 @@ namespace bustub {
  * | FIXED-SIZE or VARIED-SIZED OFFSET | PAYLOAD OF VARIED-SIZED FIELD |
  * ---------------------------------------------------------------------
  */
+// 每一个tuple只存储对应的序列化之后的二进制数据，如何解析需要通过
+// 传入的schema和column_index
 class Tuple {
   friend class TablePage;
 
@@ -94,7 +96,7 @@ class Tuple {
 
   bool allocated_{false};  // is allocated?
   RID rid_{};              // if pointing to the table heap, the rid is valid
-  uint32_t size_{0};
+  uint32_t size_{0};       // 整个tuple的大小
   char *data_{nullptr};
 };
 

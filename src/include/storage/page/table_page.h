@@ -141,11 +141,12 @@ class TablePage : public Page {
   static_assert(sizeof(page_id_t) == 4);
 
   static constexpr size_t SIZE_TABLE_PAGE_HEADER = 24;
-  static constexpr size_t SIZE_TUPLE = 8;
+  static constexpr size_t SIZE_TUPLE = 8;  // 每个tuple包含一个offset和一个size
   static constexpr size_t OFFSET_PREV_PAGE_ID = 8;
   static constexpr size_t OFFSET_NEXT_PAGE_ID = 12;
   static constexpr size_t OFFSET_FREE_SPACE = 16;
   static constexpr size_t OFFSET_TUPLE_COUNT = 20;
+  // 存储当前page的各个tuple的偏移和大小
   static constexpr size_t OFFSET_TUPLE_OFFSET = 24;  // Naming things is hard.
   static constexpr size_t OFFSET_TUPLE_SIZE = 28;
 
