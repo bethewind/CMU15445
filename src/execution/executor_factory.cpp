@@ -28,6 +28,12 @@
 
 namespace bustub {
 
+// 根据plan创造出整个执行器链条
+// 由于plan之间可能组成一个树型的关系
+// 然后生成的executor之间也是一个树形的关系
+// 每个executor存储这自己的plan，plan中记录了所有执行需要的信息
+// 每个executor存储这自己plan的子plan的executor，
+// 从根节点开始递归地创造出来
 std::unique_ptr<AbstractExecutor> ExecutorFactory::CreateExecutor(ExecutorContext *exec_ctx,
                                                                   const AbstractPlanNode *plan) {
   switch (plan->GetType()) {

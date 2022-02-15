@@ -29,13 +29,16 @@
 namespace bustub {
 /**
  * A simplified hash table that has all the necessary functionality for aggregations.
+ * 以groupby的表达式作为key，对应的当前各个agg的结果作为value，存放到一个数组中，
+ * 在处理完之后，直接遍历这个hash表就可以逐个输出数据。
+ * 所以需要在Init的时候就把结果全部计算完成
  */
 class SimpleAggregationHashTable {
  public:
   /**
    * Create a new simplified aggregation hash table.
-   * @param agg_exprs the aggregation expressions
-   * @param agg_types the types of aggregations
+   * @param agg_exprs the aggregation expressions, 对出入的tuple计算对应需要的值
+   * @param agg_types the types of aggregations, 每个值的聚合函数是什么
    */
   SimpleAggregationHashTable(const std::vector<const AbstractExpression *> &agg_exprs,
                              const std::vector<AggregationType> &agg_types)
@@ -196,8 +199,8 @@ class AggregationExecutor : public AbstractExecutor {
   /** The child executor whose tuples we are aggregating. */
   std::unique_ptr<AbstractExecutor> child_;
   /** Simple aggregation hash table. */
-  // Uncomment me! SimpleAggregationHashTable aht_;
+  SimpleAggregationHashTable aht_;
   /** Simple aggregation hash table iterator. */
-  // Uncomment me! SimpleAggregationHashTable::Iterator aht_iterator_;
+  SimpleAggregationHashTable::Iterator aht_iterator_;
 };
 }  // namespace bustub

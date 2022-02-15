@@ -35,10 +35,11 @@ class AggregationPlanNode : public AbstractPlanNode {
    * Creates a new AggregationPlanNode.
    * @param output_schema the output format of this plan node
    * @param child the child plan to aggregate data over
-   * @param having the having clause of the aggregation
-   * @param group_bys the group by clause of the aggregation
-   * @param aggregates the expressions that we are aggregating
-   * @param agg_types the types that we are aggregating
+   * @param having the having clause of the aggregation, 对child拿到的tuple进行判断，看是否满足条件
+   * @param group_bys the group by clause of the aggregation,
+   * 按照若干列进行聚合，每一个表达式对输入的tuple得到一个对应的输出
+   * @param aggregates the expressions that we are aggregating, 每一个表达式对一个tuple进行操作，并返回一个数值。
+   * @param agg_types the types that we are aggregating, 表示对数值进行怎样的聚合，比如MIN MAX COUNT等
    */
   AggregationPlanNode(const Schema *output_schema, const AbstractPlanNode *child, const AbstractExpression *having,
                       std::vector<const AbstractExpression *> &&group_bys,

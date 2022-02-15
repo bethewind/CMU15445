@@ -9,8 +9,10 @@
 #include <vector>
 
 #include "buffer/buffer_pool_manager.h"
+#include "catalog/column.h"
 #include "catalog/schema.h"
 #include "common/exception.h"
+#include "common/logger.h"
 #include "storage/index/b_plus_tree_index.h"
 #include "storage/index/index.h"
 #include "storage/page/table_page.h"
@@ -143,6 +145,19 @@ class Catalog {
       ++counter;
     }
     LOG_INFO("Insert %d element to index %s of table %s", counter, index_name.c_str(), table_name.c_str());
+    for (auto x : key_attrs) {
+      LOG_INFO("Key attributes: %d", x);
+    }
+    const std::vector<Column> &columns = key_schema.GetColumns();
+    for (const auto &column : columns) {
+      LOG_INFO("Key Column name: %s", column.GetName().c_str());
+    }
+
+    const std::vector<Column> &columns_table = schema.GetColumns();
+    for (const auto &column : columns_table) {
+      LOG_INFO("Table Column name: %s", column.GetName().c_str());
+    }
+
     std::unique_ptr<IndexInfo> index_info =
         std::make_unique<IndexInfo>(key_schema, index_name, std::move(index), index_oid, table_name, keysize);
     IndexInfo *ans = index_info.get();
