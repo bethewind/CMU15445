@@ -31,7 +31,10 @@ void SeqScanExecutor::Init() {
 }
 
 bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
-  while (cur_ != end_ && !plan_->GetPredicate()->Evaluate(&*cur_, schema_).GetAs<bool>()) {
+  while (cur_ != end_) {
+    if (plan_->GetPredicate() == nullptr || plan_->GetPredicate()->Evaluate(&*cur_, schema_).GetAs<bool>()) {
+      break;
+    }
     ++cur_;
   }
   if (cur_ == end_) {
