@@ -1,7 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-//                         BusTub
-//
+//                         BusTub //
 // nested_loop_join_executor.h
 //
 // Identification: src/include/execution/executors/nested_loop_join_executor.h
@@ -48,5 +47,12 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
  private:
   /** The NestedLoop plan node to be executed. */
   const NestedLoopJoinPlanNode *plan_;
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  std::unique_ptr<AbstractExecutor> right_executor_;
+  Tuple left_tuple_{};
+  RID left_rid_{};
+  Tuple right_tuple_{};
+  RID right_rid_{};
+  bool stop_;
 };
 }  // namespace bustub
