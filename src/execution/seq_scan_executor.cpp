@@ -22,24 +22,15 @@
 namespace bustub {
 
 SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNode *plan)
-    : AbstractExecutor(exec_ctx),
-      plan_(plan),
-      cur_(nullptr, RID(INVALID_PAGE_ID, 0), nullptr),
-      old_table_schema_string_(exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_.ToString()) {}
+    : AbstractExecutor(exec_ctx), plan_(plan), cur_(nullptr, RID(INVALID_PAGE_ID, 0), nullptr) {}
 
 void SeqScanExecutor::Init() {
   cur_ = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->Begin(exec_ctx_->GetTransaction());
 }
 
 bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
-  Schema &cur_table_schema = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_;
-  std::string cur_table_schema_string = cur_table_schema.ToString();
-  if (old_table_schema_string_ != cur_table_schema_string) {
-    LOG_INFO("Old table schema string: %s", old_table_schema_string_.c_str());
-    LOG_INFO("Cur table schema string: %s", cur_table_schema_string.c_str());
-    return false;
-  }
   TableIterator end = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->End();
+  Schema cur_table_schema = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_;
   while (cur_ != end) {
     if (plan_->GetPredicate() == nullptr || plan_->GetPredicate()->Evaluate(&*cur_, &cur_table_schema).GetAs<bool>()) {
       break;

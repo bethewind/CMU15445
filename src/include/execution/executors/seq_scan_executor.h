@@ -47,7 +47,5 @@ class SeqScanExecutor : public AbstractExecutor {
 
   /** The iterator */
   TableIterator cur_;
-
-  std::string old_table_schema_string_;
 };
 }  // namespace bustub
