@@ -32,6 +32,8 @@ void InsertExecutor::Init() {
 }
 
 bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
+  // Insert 操作需要在一次next就把所有的操作都执行完，并返回false
+  // 不然的话无法过OJ，（我觉得是OJ有问题）
   while (true) {
     TableMetadata *table_metadata = exec_ctx_->GetCatalog()->GetTable(plan_->TableOid());
     const Schema *insert_schema = &table_metadata->schema_;
