@@ -12,8 +12,10 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
+#include "catalog/catalog.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/seq_scan_plan.h"
@@ -45,7 +47,7 @@ class SeqScanExecutor : public AbstractExecutor {
 
   /** The iterator */
   TableIterator cur_;
-  TableIterator end_;
-  Schema *schema_{nullptr};
+
+  std::string old_table_schema_string_;
 };
 }  // namespace bustub

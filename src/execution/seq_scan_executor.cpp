@@ -12,8 +12,12 @@
 #include "execution/executors/seq_scan_executor.h"
 #include "catalog/catalog.h"
 #include "catalog/column.h"
+#include "catalog/schema.h"
 #include "common/config.h"
+#include "common/logger.h"
 #include "execution/expressions/abstract_expression.h"
+#include "execution/expressions/column_value_expression.h"
+#include "storage/table/table_iterator.h"
 
 namespace bustub {
 
@@ -21,31 +25,37 @@ SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNod
     : AbstractExecutor(exec_ctx),
       plan_(plan),
       cur_(nullptr, RID(INVALID_PAGE_ID, 0), nullptr),
-      end_(nullptr, RID(INVALID_PAGE_ID, 0), nullptr) {}
+      old_table_schema_string_(exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_.ToString()) {}
 
 void SeqScanExecutor::Init() {
-  TableMetadata *table_meta_data = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid());
-  schema_ = &table_meta_data->schema_;
-  cur_ = table_meta_data->table_->Begin(exec_ctx_->GetTransaction());
-  end_ = table_meta_data->table_->End();
+  cur_ = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->Begin(exec_ctx_->GetTransaction());
 }
 
 bool SeqScanExecutor::Next(Tuple *tuple, RID *rid) {
-  while (cur_ != end_) {
-    if (plan_->GetPredicate() == nullptr || plan_->GetPredicate()->Evaluate(&*cur_, schema_).GetAs<bool>()) {
+  Schema &cur_table_schema = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_;
+  std::string cur_table_schema_string = cur_table_schema.ToString();
+  if (old_table_schema_string_ != cur_table_schema_string) {
+    LOG_INFO("Old table schema string: %s", old_table_schema_string_.c_str());
+    LOG_INFO("Cur table schema string: %s", cur_table_schema_string.c_str());
+    return false;
+  }
+  TableIterator end = exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->End();
+  while (cur_ != end) {
+    if (plan_->GetPredicate() == nullptr || plan_->GetPredicate()->Evaluate(&*cur_, &cur_table_schema).GetAs<bool>()) {
       break;
     }
     ++cur_;
   }
-  if (cur_ == end_) {
+  if (cur_ == end) {
     return false;
   }
   const Schema *out_schema = plan_->OutputSchema();
   std::vector<Value> values;
   const std::vector<Column> &columns = out_schema->GetColumns();
+
   for (const auto &column : columns) {
     const AbstractExpression *expr = column.GetExpr();
-    values.push_back(expr->Evaluate(&*cur_, schema_));
+    values.push_back(expr->Evaluate(&*cur_, &cur_table_schema));
   }
   *tuple = Tuple(values, out_schema);
   *rid = cur_->GetRid();

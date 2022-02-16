@@ -67,7 +67,6 @@ void TableGenerator::FillTable(TableMetadata *info, TableInsertMeta *table_meta)
     }
     // exec_ctx_->GetBufferPoolManager()->FlushAllPages();
   }
-  LOG_INFO("Wrote %d tuples to table %s.", num_inserted, table_meta->name_);
 }
 
 void TableGenerator::GenerateTestTables() {

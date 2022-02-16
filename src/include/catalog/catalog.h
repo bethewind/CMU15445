@@ -144,19 +144,6 @@ class Catalog {
       index->InsertEntry(tuple, iter->GetRid(), txn);
       ++counter;
     }
-    LOG_INFO("Insert %d element to index %s of table %s", counter, index_name.c_str(), table_name.c_str());
-    for (auto x : key_attrs) {
-      LOG_INFO("Key attributes: %d", x);
-    }
-    const std::vector<Column> &columns = key_schema.GetColumns();
-    for (const auto &column : columns) {
-      LOG_INFO("Key Column name: %s", column.GetName().c_str());
-    }
-
-    const std::vector<Column> &columns_table = schema.GetColumns();
-    for (const auto &column : columns_table) {
-      LOG_INFO("Table Column name: %s", column.GetName().c_str());
-    }
 
     std::unique_ptr<IndexInfo> index_info =
         std::make_unique<IndexInfo>(key_schema, index_name, std::move(index), index_oid, table_name, keysize);

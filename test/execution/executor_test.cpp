@@ -546,4 +546,59 @@ TEST_F(ExecutorTest, SimpleGroupByAggregation) {
   }
 }
 
+TEST_F(ExecutorTest, SchemaChangeSeqScan) {
+  // INSERT INTO empty_table2 SELECT colA, colB FROM test_1 WHERE colA > 600
+  // compare: SELECT colA as outA, colB as outB FROM empty_table2
+  std::unique_ptr<AbstractPlanNode> scan_plan1;
+  const Schema *out_schema1;
+  {
+    auto table_info = GetExecutorContext()->GetCatalog()->GetTable("test_1");
+    auto &schema = table_info->schema_;
+    auto colA = MakeColumnValueExpression(schema, 0, "colA");
+    auto colB = MakeColumnValueExpression(schema, 0, "colB");
+    auto const600 = MakeConstantValueExpression(ValueFactory::GetIntegerValue(600));
+    auto predicate = MakeComparisonExpression(colA, const600, ComparisonType::GreaterThan);
+    out_schema1 = MakeOutputSchema({{"colA", colA}, {"colB", colB}});
+    scan_plan1 = std::make_unique<SeqScanPlanNode>(out_schema1, predicate, table_info->oid_);
+  }
+
+  std::unique_ptr<AbstractPlanNode> insert_plan;
+  {
+    auto table_info = GetExecutorContext()->GetCatalog()->GetTable("empty_table2");
+    insert_plan = std::make_unique<InsertPlanNode>(scan_plan1.get(), table_info->oid_);
+  }
+
+  std::vector<Tuple> result_set;
+  GetExecutionEngine()->Execute(insert_plan.get(), &result_set, GetTxn(), GetExecutorContext());
+  ASSERT_TRUE(result_set.empty());
+
+  // Now iterate through both tables, and make sure they have the same data
+  std::unique_ptr<AbstractPlanNode> scan_plan2;
+  const Schema *out_schema2;
+  {
+    auto table_info2 = GetExecutorContext()->GetCatalog()->GetTable("empty_table2");
+    auto table_info3 = GetExecutorContext()->GetCatalog()->GetTable("empty_table3");
+    auto &schema3 = table_info3->schema_;
+    auto outA = MakeColumnValueExpression(schema3, 0, "outA");
+    auto outB = MakeColumnValueExpression(schema3, 0, "outB");
+    out_schema2 = MakeOutputSchema({{"outA", outA}, {"outB", outB}});
+    scan_plan2 = std::make_unique<SeqScanPlanNode>(out_schema2, nullptr, table_info2->oid_);
+  }
+
+  std::vector<Tuple> result_set1;
+  GetExecutionEngine()->Execute(scan_plan1.get(), &result_set1, GetTxn(), GetExecutorContext());
+
+  std::vector<Tuple> result_set2;
+  GetExecutionEngine()->Execute(scan_plan2.get(), &result_set2, GetTxn(), GetExecutorContext());
+
+  ASSERT_EQ(result_set1.size(), 399);
+  ASSERT_EQ(result_set2.size(), 399);
+  for (size_t i = 0; i < result_set1.size(); ++i) {
+    ASSERT_EQ(result_set1[i].GetValue(out_schema1, out_schema1->GetColIdx("colA")).GetAs<int32_t>(),
+              result_set2[i].GetValue(out_schema2, out_schema2->GetColIdx("outA")).GetAs<int32_t>());
+    ASSERT_EQ(result_set1[i].GetValue(out_schema1, out_schema1->GetColIdx("colB")).GetAs<int32_t>(),
+              result_set2[i].GetValue(out_schema2, out_schema2->GetColIdx("outB")).GetAs<int32_t>());
+  }
+}
+
 }  // namespace bustub
