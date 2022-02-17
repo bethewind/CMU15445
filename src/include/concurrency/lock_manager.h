@@ -74,6 +74,7 @@ class LockManager {
     cycle_detection_thread_->join();
     delete cycle_detection_thread_;
     LOG_INFO("Cycle detection thread stopped");
+    /*
     std::vector<std::string> files = {"/autograder/bustub/test/concurrency/grading_lock_manager_detection_test.cpp"};
 
     for (auto &file : files) {
@@ -85,6 +86,7 @@ class LockManager {
       }
       std::cout << "=== " << file << " ===" << std::endl;
     }
+    */
   }
   /*
    * [LOCK_NOTE]: For all locking functions, we:
