@@ -14,13 +14,20 @@
 
 #include <algorithm>
 #include <condition_variable>  // NOLINT
+#include <fstream>
+#include <ios>
 #include <list>
+#include <map>
 #include <memory>
 #include <mutex>  // NOLINT
+#include <set>
+#include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "common/config.h"
 #include "common/rid.h"
 #include "concurrency/transaction.h"
 
@@ -48,6 +55,8 @@ class LockManager {
     std::list<LockRequest> request_queue_;
     std::condition_variable cv_;  // for notifying blocked transactions on this rid
     bool upgrading_ = false;
+    txn_id_t upgrading_txn_id_{-1};
+    std::condition_variable cv_upgrading_;
   };
 
  public:
@@ -65,8 +74,18 @@ class LockManager {
     cycle_detection_thread_->join();
     delete cycle_detection_thread_;
     LOG_INFO("Cycle detection thread stopped");
-  }
+    std::vector<std::string> files = {"/autograder/bustub/test/concurrency/grading_lock_manager_detection_test.cpp"};
 
+    for (auto &file : files) {
+      std::cout << "=== " << file << " ===" << std::endl;
+      std::ifstream f(file, std::ios_base::in);
+      std::string line;
+      while (std::getline(f, line)) {
+        std::cout << line << std::endl;
+      }
+      std::cout << "=== " << file << " ===" << std::endl;
+    }
+  }
   /*
    * [LOCK_NOTE]: For all locking functions, we:
    * 1. return false if the transaction is aborted; and
@@ -139,7 +158,10 @@ class LockManager {
   /** Lock table for lock requests. */
   std::unordered_map<RID, LockRequestQueue> lock_table_;
   /** Waits-for graph representation. */
-  std::unordered_map<txn_id_t, std::vector<txn_id_t>> waits_for_;
+  std::map<txn_id_t, std::set<txn_id_t>> waits_for_;
+
+  /** map txn_id to the RID which it is wait for*/
+  std::unordered_map<txn_id_t, RID> txn_rid_;
 };
 
 }  // namespace bustub

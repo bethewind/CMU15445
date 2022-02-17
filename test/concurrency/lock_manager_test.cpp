@@ -7,6 +7,7 @@
 
 #include "common/config.h"
 #include "concurrency/lock_manager.h"
+#include "concurrency/transaction.h"
 #include "concurrency/transaction_manager.h"
 #include "gtest/gtest.h"
 
@@ -77,7 +78,121 @@ void BasicTest1() {
     delete txns[i];
   }
 }
-TEST(LockManagerTest, DISABLED_BasicTest) { BasicTest1(); }
+TEST(LockManagerTest, BasicTest) { BasicTest1(); }
+/**
+ * grading_lock_manager_test_1.cpp
+ */
+
+// --- Real tests ---
+// Basic shared lock test under READ_COMMITTED
+void BasicTest2() {
+  LockManager lock_mgr{};
+  TransactionManager txn_mgr{&lock_mgr};
+
+  std::vector<RID> rids;
+  std::vector<Transaction *> txns;
+  int num_rids = 10;
+  for (int i = 0; i < num_rids; i++) {
+    RID rid{i, static_cast<uint32_t>(i)};
+    rids.push_back(rid);
+    txns.push_back(txn_mgr.Begin(nullptr, IsolationLevel::READ_COMMITTED));
+    EXPECT_EQ(i, txns[i]->GetTransactionId());
+  }
+  // test
+
+  auto task = [&](int txn_id) {
+    bool res;
+    for (const RID &rid : rids) {
+      res = lock_mgr.LockShared(txns[txn_id], rid);
+      EXPECT_TRUE(res);
+      CheckGrowing(txns[txn_id]);
+    }
+    for (const RID &rid : rids) {
+      res = lock_mgr.Unlock(txns[txn_id], rid);
+      EXPECT_TRUE(res);
+      CheckGrowing(txns[txn_id]);
+    }
+    txn_mgr.Commit(txns[txn_id]);
+    CheckCommitted(txns[txn_id]);
+  };
+  std::vector<std::thread> threads;
+  threads.reserve(num_rids);
+
+  for (int i = 0; i < num_rids; i++) {
+    threads.emplace_back(std::thread{task, i});
+  }
+
+  for (int i = 0; i < num_rids; i++) {
+    threads[i].join();
+  }
+
+  for (int i = 0; i < num_rids; i++) {
+    delete txns[i];
+  }
+}
+
+// Basic shared lock test under READ_UNCOMMITTED
+void BasicTest3() {
+  LockManager lock_mgr{};
+  TransactionManager txn_mgr{&lock_mgr};
+
+  std::vector<RID> rids;
+  std::vector<Transaction *> txns;
+  int num_rids = 10;
+  for (int i = 0; i < num_rids; i++) {
+    RID rid{i, static_cast<uint32_t>(i)};
+    rids.push_back(rid);
+    txns.push_back(txn_mgr.Begin(nullptr, IsolationLevel::READ_UNCOMMITTED));
+    EXPECT_EQ(i, txns[i]->GetTransactionId());
+  }
+  // test
+
+  auto task = [&](int txn_id) {
+    for (const RID &rid : rids) {
+      try {
+        lock_mgr.LockShared(txns[txn_id], rid);
+      } catch (TransactionAbortException &e) {
+        CheckAborted(txns[txn_id]);
+      }
+    }
+  };
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_rids);
+
+  for (int i = 0; i < num_rids; i++) {
+    threads.emplace_back(std::thread{task, i});
+  }
+
+  for (int i = 0; i < num_rids; i++) {
+    threads[i].join();
+  }
+
+  for (int i = 0; i < num_rids; i++) {
+    delete txns[i];
+  }
+}
+
+// Correct case
+
+/****************************
+ * Basic Tests (15 pts)
+ ****************************/
+
+const size_t NUM_ITERS = 10;
+
+/*
+ * Score: 5
+ * Description: Basic tests for LockShared and Unlock operations
+ * on small amount of rids.
+ */
+TEST(LockManagerTest, BasicTestAll) {
+  for (size_t i = 0; i < NUM_ITERS; i++) {
+    BasicTest1();
+    BasicTest2();
+    BasicTest3();
+  }
+}
 
 void TwoPLTest() {
   LockManager lock_mgr{};
@@ -123,7 +238,7 @@ void TwoPLTest() {
 
   delete txn;
 }
-TEST(LockManagerTest, DISABLED_TwoPLTest) { TwoPLTest(); }
+TEST(LockManagerTest, TwoPLTest) { TwoPLTest(); }
 
 void UpgradeTest() {
   LockManager lock_mgr{};
@@ -150,9 +265,19 @@ void UpgradeTest() {
   txn_mgr.Commit(&txn);
   CheckCommitted(&txn);
 }
-TEST(LockManagerTest, DISABLED_UpgradeLockTest) { UpgradeTest(); }
+TEST(LockManagerTest, UpgradeLockTest) { UpgradeTest(); }
+/*
+TEST(LockManagerTest, Demo) {
+    LockManager lock_mgr{};
+    TransactionManager txn_mgr(&lock_mgr);
+    Transaction *txn0 = txn_mgr.Begin();;
+    CheckGrowing(txn0);
+   txn0->SetState(TransactionState::SHRINKING);
+  CheckGrowing(txn0);
+}
+*/
 
-TEST(LockManagerTest, DISABLED_GraphEdgeTest) {
+TEST(LockManagerTest, GraphEdgeTest) {
   LockManager lock_mgr{};
   TransactionManager txn_mgr{&lock_mgr};
   const int num_nodes = 100;
@@ -194,7 +319,7 @@ TEST(LockManagerTest, DISABLED_GraphEdgeTest) {
   }
 }
 
-TEST(LockManagerTest, DISABLED_BasicCycleTest) {
+TEST(LockManagerTest, BasicCycleTest) {
   LockManager lock_mgr{}; /* Use Deadlock detection */
   TransactionManager txn_mgr{&lock_mgr};
 
@@ -211,7 +336,7 @@ TEST(LockManagerTest, DISABLED_BasicCycleTest) {
   EXPECT_EQ(false, lock_mgr.HasCycle(&txn));
 }
 
-TEST(LockManagerTest, DISABLED_BasicDeadlockDetectionTest) {
+TEST(LockManagerTest, BasicDeadlockDetectionTest) {
   LockManager lock_mgr{};
   cycle_detection_interval = std::chrono::milliseconds(500);
   TransactionManager txn_mgr{&lock_mgr};
@@ -267,4 +392,5 @@ TEST(LockManagerTest, DISABLED_BasicDeadlockDetectionTest) {
   delete txn0;
   delete txn1;
 }
+
 }  // namespace bustub
