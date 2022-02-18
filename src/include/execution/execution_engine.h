@@ -16,6 +16,7 @@
 
 #include "buffer/buffer_pool_manager.h"
 #include "catalog/catalog.h"
+#include "common/logger.h"
 #include "concurrency/transaction_manager.h"
 #include "execution/executor_context.h"
 #include "execution/executor_factory.h"
@@ -47,6 +48,8 @@ class ExecutionEngine {
         }
       }
     } catch (Exception &e) {
+      LOG_INFO("GET A EXCEPTION FROM EXECUTOR");
+      exec_ctx->GetTransactionManager()->Abort(exec_ctx->GetTransaction());
       // TODO(student): handle exceptions
     }
 

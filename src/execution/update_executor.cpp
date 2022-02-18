@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "catalog/catalog.h"
+#include "common/exception.h"
 #include "execution/executors/update_executor.h"
 
 namespace bustub {
@@ -33,7 +34,10 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
     return false;
   }
   Tuple new_tuple = GenerateUpdatedTuple(tmp_tuple);
-  table_info_->table_->UpdateTuple(new_tuple, tmp_rid, exec_ctx_->GetTransaction());
+  bool update_result = table_info_->table_->UpdateTuple(new_tuple, tmp_rid, exec_ctx_->GetTransaction());
+  if (!update_result) {
+    throw Exception("UPDATE FAIL");
+  }
   *rid = tmp_rid;
   return true;
 }

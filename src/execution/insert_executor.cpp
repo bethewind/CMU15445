@@ -13,6 +13,7 @@
 
 #include "catalog/catalog.h"
 #include "catalog/schema.h"
+#include "concurrency/transaction.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/executors/insert_executor.h"
 #include "execution/plans/abstract_plan.h"
@@ -53,10 +54,18 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
     }
     bool insert_result = table_metadata->table_->InsertTuple(tmp_tuple, &tmp_rid, exec_ctx_->GetTransaction());
     if (!insert_result) {
+      // 需要抛异常么？
+      throw Exception("Insert FAIL!");
       continue;
     }
+    // TableWriteRecord write_record{tmp_rid, WType::INSERT, tmp_tuple, table_metadata->table_.get()};
+    // exec_ctx_->GetTransaction()->AppendTableWriteRecord(write_record);
+    // 写入的记录再内部已经添加到记录中了
     for (const IndexInfo *index_info : index_infos) {
       index_info->index_->InsertEntry(tmp_tuple, tmp_rid, exec_ctx_->GetTransaction());
+      IndexWriteRecord index_write_record{tmp_rid,   table_metadata->oid_,   WType::INSERT,
+                                          tmp_tuple, index_info->index_oid_, exec_ctx_->GetCatalog()};
+      exec_ctx_->GetTransaction()->AppendTableWriteRecord(index_write_record);
     }
   }
 

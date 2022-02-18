@@ -268,8 +268,11 @@ bool LockManager::Unlock(Transaction *txn, const RID &rid) {
   };
 
   auto req_iter = get_req_iter(txn->GetTransactionId());
-
-  assert(req_iter->granted_);
+  if (req_iter == req_queue.end()) {
+    LOG_INFO("UNLOCK A LOCK DON't OWN");
+    return true;
+  }
+  // assert(req_iter->granted_);
   req_queue.erase(req_iter);
   cv.notify_all();
 

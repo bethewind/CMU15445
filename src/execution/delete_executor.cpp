@@ -12,8 +12,12 @@
 #include <memory>
 
 #include "catalog/catalog.h"
+#include "common/exception.h"
+#include "concurrency/transaction.h"
+#include "execution/execution_engine.h"
 #include "execution/executors/delete_executor.h"
 #include "execution/plans/index_scan_plan.h"
+#include "storage/page/table_page.h"
 #include "storage/table/table_heap.h"
 
 namespace bustub {
@@ -31,10 +35,16 @@ bool DeleteExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
   if (!child_executor_->Next(&tmp_tuple, &tmp_rid)) {
     return false;
   }
-  table_info->table_->MarkDelete(tmp_rid, exec_ctx_->GetTransaction());
+  bool delete_result = table_info->table_->MarkDelete(tmp_rid, exec_ctx_->GetTransaction());
+  if (!delete_result) {
+    throw Exception("DELETE FAIL");
+  }
   std::vector<IndexInfo *> IndexInfos = exec_ctx_->GetCatalog()->GetTableIndexes(table_info->name_);
   for (const IndexInfo *index_info : IndexInfos) {
     index_info->index_->DeleteEntry(tmp_tuple, tmp_rid, exec_ctx_->GetTransaction());
+    IndexWriteRecord index_write_record{tmp_rid,   table_info->oid_,       WType::DELETE,
+                                        tmp_tuple, index_info->index_oid_, exec_ctx_->GetCatalog()};
+    exec_ctx_->GetTransaction()->AppendTableWriteRecord(index_write_record);
   }
   if (tuple != nullptr) {
     *tuple = tmp_tuple;
