@@ -33,6 +33,22 @@ bool UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
   if (!child_executor_->Next(&tmp_tuple, &tmp_rid)) {
     return false;
   }
+  // 进行加锁
+  Transaction *txn = exec_ctx_->GetTransaction();
+  LockManager *lock_mgr = exec_ctx_->GetLockManager();
+  if (lock_mgr != nullptr && txn != nullptr && !txn->IsExclusiveLocked(tmp_rid)) {
+    // 如果已经持有了共享锁，则直接进行升级
+    bool lock_result = false;
+    if (txn->IsSharedLocked(tmp_rid)) {
+      lock_result = lock_mgr->LockUpgrade(txn, tmp_rid);
+    } else {
+      lock_result = lock_mgr->LockExclusive(txn, tmp_rid);
+    }
+    if (!lock_result) {
+      throw Exception("LOCK FAIL");
+    }
+  }
+
   Tuple new_tuple = GenerateUpdatedTuple(tmp_tuple);
   bool update_result = table_info_->table_->UpdateTuple(new_tuple, tmp_rid, exec_ctx_->GetTransaction());
   if (!update_result) {

@@ -13,6 +13,7 @@
 
 #include "catalog/catalog.h"
 #include "catalog/schema.h"
+#include "concurrency/lock_manager.h"
 #include "concurrency/transaction.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/executors/insert_executor.h"
@@ -58,6 +59,22 @@ bool InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) {
       throw Exception("Insert FAIL!");
       continue;
     }
+    // 进行加锁
+    Transaction *txn = exec_ctx_->GetTransaction();
+    LockManager *lock_mgr = exec_ctx_->GetLockManager();
+    if (lock_mgr != nullptr && txn != nullptr && !txn->IsExclusiveLocked(tmp_rid)) {
+      // 如果已经持有了共享锁，则直接进行升级
+      bool lock_result = false;
+      if (txn->IsSharedLocked(tmp_rid)) {
+        lock_result = lock_mgr->LockUpgrade(txn, tmp_rid);
+      } else {
+        lock_result = lock_mgr->LockExclusive(txn, tmp_rid);
+      }
+      if (!lock_result) {
+        throw Exception("LOCK FAIL");
+      }
+    }
+
     // TableWriteRecord write_record{tmp_rid, WType::INSERT, tmp_tuple, table_metadata->table_.get()};
     // exec_ctx_->GetTransaction()->AppendTableWriteRecord(write_record);
     // 写入的记录再内部已经添加到记录中了

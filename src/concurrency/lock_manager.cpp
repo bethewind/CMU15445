@@ -33,6 +33,7 @@
 namespace bustub {
 
 bool LockManager::LockShared(Transaction *txn, const RID &rid) {
+  // LOG_INFO("txn %d LOCK SHARE. page num: %d, slot num: %d", txn->GetTransactionId(), rid.GetPageId(), rid.GetSlotNum());
   IsolationLevel level = txn->GetIsolationLevel();
   if (level == IsolationLevel::READ_UNCOMMITTED) {
     txn->SetState(TransactionState::ABORTED);
@@ -107,6 +108,8 @@ bool LockManager::LockShared(Transaction *txn, const RID &rid) {
 }
 
 bool LockManager::LockExclusive(Transaction *txn, const RID &rid) {
+  //LOG_INFO("txn %d LOCK EXCLUSIVE. page num: %d, slot num: %d", txn->GetTransactionId(), rid.GetPageId(),
+           //rid.GetSlotNum());
   // LOG_INFO("Transaction: %d, RID: %d, %d LockExclusive, State is: %d", txn->GetTransactionId(), rid.GetPageId(),
   // rid.GetSlotNum(), static_cast<int>(txn->GetState()));
   // 对于所有的隔离级别，互斥锁都是正常枷锁
@@ -170,6 +173,7 @@ bool LockManager::LockExclusive(Transaction *txn, const RID &rid) {
 }
 
 bool LockManager::LockUpgrade(Transaction *txn, const RID &rid) {
+  // LOG_INFO("txn %d LOCK UPGRADE. page num: %d, slot num: %d", txn->GetTransactionId(), rid.GetPageId(),
   // LOG_INFO("Transaction: %d, RID: %d, %d LockUpgrade, State is: %d", txn->GetTransactionId(), rid.GetPageId(),
   // rid.GetSlotNum(), static_cast<int>(txn->GetState()));
   if (txn->GetState() != TransactionState::GROWING) {
@@ -250,6 +254,7 @@ bool LockManager::LockUpgrade(Transaction *txn, const RID &rid) {
 }
 
 bool LockManager::Unlock(Transaction *txn, const RID &rid) {
+  // LOG_INFO("txn %d UNLOCK. page num: %d, slot num: %d", txn->GetTransactionId(), rid.GetPageId(), rid.GetSlotNum());
   // LOG_INFO("Transaction: %d, RID: %d, %d Unlock, State is: %d", txn->GetTransactionId(), rid.GetPageId(),
   // rid.GetSlotNum(), static_cast<int>(txn->GetState()));
   txn->GetSharedLockSet()->erase(rid);
